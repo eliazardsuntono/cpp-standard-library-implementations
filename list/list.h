@@ -1,5 +1,6 @@
 #include <memory>
 #include <iterator>
+#include <type_traits>
 
 namespace custom_std {
   // std::list underlying implementation uses a doubly linked list for efficient front and back insertion
@@ -27,14 +28,13 @@ namespace custom_std {
 
       list() : list(Allocator()) {}
       explicit list( Allocator const & alloc = Allocator() ) : alloc_{alloc} {} 
-      explicit list( Allocator const & alloc ) : alloc_{alloc} {}
       explicit list( std::size_t count, const_reference value, 
           Allocator const & alloc = Allocator() ) : count_(count), alloc_(alloc) {
         for ( auto i{0u}; i < count_; ++i ) {
           pointer val = alloc_.allocate(sizeof(value_type));
-          if ( !head ) {
-            head->data_ = val;
-            tail->data_ = val;
+          if ( !head_ ) {
+            head_->data_ = val;
+            tail_->data_ = val;
           } else {
             tail_->next = val;
             tail_ = val;
@@ -44,21 +44,26 @@ namespace custom_std {
       template<class InputIt>
       explicit list ( InputIt first, InputIt last, Allocator const & alloc = Allocator() ) {
         // TODO: could be worth looking into on how to reduce code duplication for this loop here
-        for ( auto i{InputIt}; i != lasts; ++i ) {
+        for ( auto i{first}; i != last; ++i ) {
           pointer val = alloc_.allocate(sizeof(value_type));
-          if ( !head ) {
+          if ( !head_ ) {
             head_->data_ = val;
             tail_->data_ = val;
           } else {
             tail_->next_ = val;
             tail_->data_ = val;
           }
+          ++count_;
         }
       }
       ~list()=default; // do I have to define dtor here? 
+      
+      std::size_t size()      { return count_; }
+      const_reference front() { return *head_->data_; }
+      const_reference back()  { return *tail_->data_; }
 
     private:
-      std::allocator alloc_;
+      allocator_type alloc_;
       doubly_linked_list<value_type> * head_{nullptr};
       doubly_linked_list<value_type> * tail_{nullptr};
       std::size_t count_;
