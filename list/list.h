@@ -50,9 +50,27 @@ namespace custom_std {
       }
       template<class InputIt, 
         typename = std::enable_if_t<!std::is_integral<InputIt>::value> >
-      explicit list ( InputIt first, InputIt last, Allocator const & alloc = Allocator() );
-      ~list() {
+      explicit list ( InputIt first, InputIt last, 
+          Allocator const & alloc = Allocator() ) : alloc_{alloc} {
+        for ( auto i{first}; i != last; ++i ) {
+          pointer val = alloc_.allocate(sizeof(value_type));
+          *val = *i;
+
+          if ( i == first ) {
+            head_.data_ = *val;
+            tail_ = head_;
+          } else {
+            double_ll_type cur;
+            cur.data_ = *val;
+            cur.prev_ = &tail_;
+            tail_.next_ = &cur;
+            tail_ = cur;
+          }
+
+          ++count_;
+        }
       }
+      ~list()=default;
 
       std::size_t size()      { return count_; }
       const_reference front() { return head_.data_; }
@@ -60,7 +78,7 @@ namespace custom_std {
 
     private:
       allocator_type alloc_;
-      std::size_t count_;
+      std::size_t count_{0};
       double_ll_type head_;
       double_ll_type tail_;
   };
