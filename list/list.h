@@ -1,13 +1,14 @@
 #include <memory>
 #include <iterator>
+#include <type_traits>
 
 namespace custom_std {
   // std::list underlying implementation uses a doubly linked list for efficient front and back insertion
   template< class T >
   struct doubly_linked_list {
-    T * data_                     = nullptr;
-    doubly_linked_list<T> * next_ = nullptr;
-    doubly_linked_list<T> * prev_ = nullptr;
+    T data_;
+    doubly_linked_list<T> * next_;
+    doubly_linked_list<T> * prev_;
   };
 
   template< class T, class Allocator = std::allocator<T> >
@@ -29,51 +30,38 @@ namespace custom_std {
       list() : list(Allocator()) {}
       explicit list( Allocator const & alloc = Allocator() ) : alloc_{alloc} {} 
       explicit list( std::size_t count, const_reference value, 
-          Allocator const & alloc = Allocator() ) : count_(count), alloc_(alloc) {
+          Allocator const & alloc = Allocator() ) 
+        : alloc_{alloc}, count_{count} {
         for ( auto i{0u}; i < count_; ++i ) {
           pointer val = alloc_.allocate(sizeof(value_type));
-          double_ll_type * cur;
-          cur->data_ = val;
+          *val = value;
 
-          if ( head_ ) {
-            cur->prev_ = tail_;
-            tail_->next_ = cur;
-            tail_ = cur;
+          if ( i == 0 ) {
+            head_.data_ = *val;
+            tail_ = head_;
           } else {
-            head_->data_ = val;
-            tail_->data_ = val;
+            double_ll_type cur;
+            cur.data_ = *val;
+            cur.prev_ = &tail_;
+            tail_.next_ = &cur;
+            tail_ = cur;
           }
         }
       }
-      template<class InputIt>
-      explicit list ( InputIt first, InputIt last, Allocator const & alloc = Allocator() ) : alloc_{alloc} {
-        for ( InputIt i{first}; i != last; ++i ) {
-          pointer val = alloc_.allocate(sizeof(value_type));
-          double_ll_type * cur;
-          cur->data_ = *i;
-          
-          if ( head_ ) {
-            cur->prev_ = tail_;
-            tail_->next_ = cur;
-            tail_ = cur;
-          } else {
-            head_->data_ = val;
-            tail_->data_ = val;
-          }
-          ++count_;
-        }
-      }
+      template<class InputIt, 
+        typename = std::enable_if_t<!std::is_integral<InputIt>::value> >
+      explicit list ( InputIt first, InputIt last, Allocator const & alloc = Allocator() );
       ~list() {
       }
 
       std::size_t size()      { return count_; }
-      const_reference front() { return *head_->data_; }
-      const_reference back()  { return *tail_->data_; }
+      const_reference front() { return head_.data_; }
+      const_reference back()  { return tail_.data_; }
 
     private:
       allocator_type alloc_;
-      double_ll_type * head_{nullptr};
-      double_ll_type * tail_{nullptr};
       std::size_t count_;
+      double_ll_type head_;
+      double_ll_type tail_;
   };
 }
