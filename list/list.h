@@ -3,18 +3,18 @@
 #include <type_traits>
 
 namespace custom_std {
-  // std::list underlying implementation uses a doubly linked list for efficient front and back insertion
   template< class T >
   struct node {
-    T data_;
-    node<T> * next_;
-    node<T> * prev_;
+    T * data_;
+    T * next_;
+    T * prev_;
   };
 
   template< class T, class Allocator = std::allocator<T> >
   class list {
     public:
       using value_type      = T;
+      using node_ptr_type   = std::unique_ptr<node<T>>;
       using allocator_type  = Allocator;
       using size_type       = std::size_t;
       using difference_type = std::ptrdiff_t;
@@ -31,23 +31,16 @@ namespace custom_std {
       explicit list( std::size_t count, const_reference value, 
           Allocator const & alloc = Allocator() ) 
         : alloc_{alloc}, count_{count} {
-        for ( auto i{0u}; i < count_; ++i ) {
-          // TODO: clean this up alongside the iterator ctor as well...
-          // this just seems kinda messy;
-          pointer val = alloc_.allocate(sizeof(value_type));
-          *val = value;
+          pointer current = head_;
+          for ( auto i{0u}; i < count_; ++i ) {
+            pointer val = alloc_.allocate(sizeof(value_type));
+            *val = value;
+            if ( !i ) { // allocate the head
+              head_{val, nullptr, nullptr};
+            } else {
 
-          if ( i == 0 ) {
-            head_.data_ = *val;
-            tail_ = head_;
-          } else {
-            node cur;
-            cur.data_ = *val;
-            cur.prev_ = &tail_;
-            tail_.next_ = &cur;
-            tail_ = cur;
+            }
           }
-        }
       }
       template<class InputIt, 
         typename = std::enable_if_t<!std::is_integral<InputIt>::value> >
@@ -58,8 +51,8 @@ namespace custom_std {
           *val = *i;
 
           if ( i == first ) {
-            head_.data_ = *val;
-            tail_ = head_;
+            head_ = std::make_unique<node<T>>(*val, nullptr, nullptr);
+            tail_ = std::make_unique<node<T>>(head_);
           } else {
             node cur;
             cur.data_ = *val;
@@ -71,7 +64,8 @@ namespace custom_std {
           ++count_;
         }
       }
-      ~list() { // implement this with the linkedlist 
+      ~list() {
+        // TODO: fix this lol
         node * current = &head_;
         while ( current ) {
           node * next = current->next_;
@@ -87,17 +81,32 @@ namespace custom_std {
         return *this;
       }
 
+      /*
+       * different scenarios:
+       * 1. this_->size() < other.size()  => we need to allocate more memory
+       * 2. this_->size() > other.size()  => we can continously swap until we get to the end of the other list and then we free the other one
+       * 3. this_->size() == other.size() => we can just swap continously
+       */ 
+      // I can do something clever and go backwards and essentially go backward until we get the thing here 
       list& operator=( list && other ) noexcept {
         if ( this != other ) {
-          // TODO: gotta finish this here
+          if (this->size() < other.size()) {
+            std::size_t data_left = other.size() - this->size();
+            node_ptr_type current = other.tail_;
+            while ( current && data_left > 0 ) { // fill the back up and swap the 
+                
+            }
+          }
         }
 
         return *this;
       }
 
-      std::size_t size()      { return count_; }
-      const_reference front() { return head_.data_; }
-      const_reference back()  { return tail_.data_; }
+      list& operator=( std::initializer_list<value_type> ilist );
+
+      std::size_t size()      const { return count_; }
+      const_reference front() const { return head_.data_; }
+      const_reference back()  const { return tail_.data_; }
 
     private:
       allocator_type alloc_;
