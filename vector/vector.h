@@ -71,10 +71,15 @@ namespace custom_std {
       reference operator[]( size_type pos ) { return at(pos); }
       const_reference operator[]( size_type pos ) const { return at(pos); }
       reference front() { return at(0); }
-      const_reference() front const { at(0); }
+      const_reference front() const { return at(0); }
       reference back() { return at(size_ - 1); }
       const_reference back() const { return at(size_ - 1); }
-      T * const data()    const { return data_; }
+      T * data() {
+        T * const data = const_cast<vector const *>(this)->data(); 
+        return const_cast<T *>(data);
+      } 
+      T * const data() const { return data_; }
+
       size_t const size() const { return size_; }
 
       void clear() {
