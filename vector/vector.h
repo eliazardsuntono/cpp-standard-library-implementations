@@ -2,7 +2,9 @@
 #include <stdexcept>
 #include <memory>
 #include <cstddef>
+#include <cstring>
 #include <iterator>
+#include <limits>
 
 namespace custom_std {
   template< typename T, typename Allocator = std::allocator<T> >
@@ -77,10 +79,23 @@ namespace custom_std {
       T * data() {
         T * const data = const_cast<vector const *>(this)->data(); 
         return const_cast<T *>(data);
-      } 
+      }
       T * const data() const { return data_; }
 
-      size_t const size() const { return size_; }
+      bool empty() { return size_ == 0; }
+      size_type size() const { return size_; }
+      size_type capacity() const { return capacity_; }
+      size_type max_size() const noexcept {
+        // TODO: read up on how the allocator_traits gets the max size
+        return std::allocator_traits<Allocator>::max_size() / sizeof(value_type);
+      }
+      void reserve( size_type new_cap ) {
+        pointer dst = std::allocator_traits<Allocator>::allocate(alloc_, capacity_ + new_cap);
+        std::memcpy(data_, dst, size_);
+        capacity_ = new_cap;
+      }
+      size_type capacity() const { return capacity_; }
+      void shrink_to_fit();
 
       void clear() {
         std::allocator_traits<Allocator>::destroy(alloc_, data_);
@@ -91,7 +106,8 @@ namespace custom_std {
 
     private:
       allocator_type alloc_;
-      size_t size_;
+      size_type size_;
+      size_type capacity_;
       T * data_;
   };
 }
