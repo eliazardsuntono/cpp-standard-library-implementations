@@ -19,6 +19,18 @@ int main() {
   int & ref_      = test_list[0];
   std::cout << "Const ref_: " << cr  << std::endl;
   std::cout << "Reference_: " << ref << std::endl;
-  
+
+  custom_std::vector<int> test_list2{ 5, 4, 3, 2, 1 };
+  auto * data_2 = test_list2.data();
+  std::cout << "Old cap: "    << test_list2.capacity() << std::endl;
+  test_list2.reserve(6);
+  std::cout << "New cap: "    << test_list2.capacity() << std::endl;
+  test_list2.shrink_to_fit();
+  std::cout << "Shrunk cap: " << test_list2.capacity() << std::endl;
+
+  test_list2.push_back(0);
+  std::size_t size2 = test_list2.size();
+  std::cout << "Appended back: " << data_2[size2 - 1]     << std::endl;
+  std::cout << "New capacitiy: " << test_list2.capacity() << std::endl;
   return 0;
 }

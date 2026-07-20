@@ -77,6 +77,43 @@ namespace custom_std {
         }
       ~vector() { clear(); }
 
+      vector& operator=( vector const & other ) {
+        if ( this != &other ) {
+          vector tmp(other);
+          swap(tmp);
+        } 
+        return *this;
+      }
+      vector& operator=( vector && other ) noexcept {
+        if ( this != &other ) {
+          data_     = other.data_;
+          size_     = other.size_;
+          capacity_ = other.capacity_;
+
+          other.data_     = nullptr;
+          other.size_     = 0;
+          other.capacity_ = 0;
+        }
+        return *this;
+      }
+      vector& operator=( std::initializer_list<value_type> ilist ) {
+        try {
+          if ( this != &other ) {
+            pointer src = std::allocator_traits<Allocator>(alloc_, ilist.size());
+            auto idx{0u}; 
+            for ( auto const & val : ilist ) {
+              src[idx] = val;
+            }
+            data_ = src;
+            size_ = capacity_ =  ilist.size();
+          } 
+        } catch ( std::bad_alloc const & e ) {
+          std::cout << "Error in assignment with initializer_list: " << e.what() << std::endl;
+          throw;
+        }
+        return *this;
+      }
+
       reference at( size_type pos ) {
         const_reference val = const_cast<vector const *>(this)->at(pos);
         return const_cast<T &>(val);
@@ -116,6 +153,7 @@ namespace custom_std {
           if ( size_ == capacity_) return;
           pointer dst = std::allocator_traits<Allocator>::allocate(alloc_, size_);
           std::memcpy(dst, data_, size_);
+          capacity_ = size_;
         } catch ( std::bad_alloc const & e ) { // NOTE: if allocation fails, then we just do nothing
           return;
         }
@@ -125,6 +163,14 @@ namespace custom_std {
         std::allocator_traits<Allocator>::destroy(alloc_, data_);
         size_ = capacity_ = 0;
       }
+      void push_back( const_reference value ) {
+        if ( size_ == capacity_ ) reserve( 2 * capacity_ );
+        value_type val = value;
+        data_[size_] = val;
+        ++size_;
+      }
+      template< class... Args >
+      reference emplace_back( Args &&... args);
       void swap( vector & other ) {
         pointer   tmp_data = data_;
         size_type tmp_sz   = size_;
