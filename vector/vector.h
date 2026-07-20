@@ -55,7 +55,7 @@ namespace custom_std {
       vector( vector && other ) noexcept {
         data_       = other.data_;
         size_       = other.size_;
-        capacity_   = other.capacity_
+        capacity_   = other.capacity_;
         alloc_      = std::move(other.alloc_);
         other.data_ = nullptr;
         other.size_ = 0;
@@ -101,7 +101,6 @@ namespace custom_std {
 
       bool empty() { return size_ == 0; }
       size_type size() const { return size_; }
-      size_type capacity() const { return capacity_; }
       size_type max_size() const noexcept {
         return std::allocator_traits<Allocator>::max_size() / sizeof(value_type);
       }
@@ -124,9 +123,20 @@ namespace custom_std {
 
       void clear() {
         std::allocator_traits<Allocator>::destroy(alloc_, data_);
+        size_ = capacity_ = 0;
       }
-      void swap() {
+      void swap( vector & other ) {
+        pointer   tmp_data = data_;
+        size_type tmp_sz   = size_;
+        size_type tmp_cap  = capacity_;
 
+        data_     = other.data_;
+        size_     = other.size_;
+        capacity_ = other.capacity_;
+
+        other.data_     = tmp_data;
+        other.size_     = tmp_sz;
+        other.capacity_ = tmp_cap;
       }
 
     private:
