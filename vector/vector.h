@@ -7,6 +7,10 @@
 #include <limits>
 
 namespace custom_std {
+  /*
+   * NOTE: there is a lot of repetitive code here - will work on fixing that and implementing a clean portable solution
+   *       (e.g in the ctors there are consistent loops that could be cleaned up on initialization)
+   */
   template< typename T, typename Allocator = std::allocator<T> >
   class vector {
     public:
